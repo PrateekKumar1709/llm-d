@@ -1,0 +1,22 @@
+# Persistent HF model cache PVC (RWX, NFS-backed) for the AMD optimized-baseline scenario.
+#
+# WHY: the upstream amd/vllm overlay uses only emptyDir caches, so every run re-downloads
+# Qwen3-32B (~65GB) from HuggingFace. On the Crusoe single-NAT-gateway network that risks the
+# HF/Xet download stall we've seen on the vLLM CI. Backing HF_HOME with a persistent RWX PVC means
+# the model downloads once and is reused across runs.
+#
+# Add this file to the amd/vllm overlay's kustomization.yaml `resources:` list, and apply the
+# companion patch (see hf-cache-patch-vllm.yaml) so the vLLM container mounts it and sets HF_HOME.
+#
+# StorageClass nfs-csi is the RWX default we installed on 4N (NFS CSI over /shared-frameworks 15TB).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hf-cache
+spec:
+  accessModes:
+    - ReadWriteMany          # RWX: shared across the decode replicas
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 200Gi         # room for Qwen3-32B + a couple other models

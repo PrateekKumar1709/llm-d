@@ -1,3 +1,12 @@
+# Amended patch-vllm.yaml for the amd/vllm optimized-baseline overlay.
+#
+# This is the upstream guides/optimized-baseline/modelserver/amd/vllm/patch-vllm.yaml with the
+# HF model cache added:
+#   - HF_HOME env pointed at /hf-cache (persistent)
+#   - a volumeMount + volume backed by the hf-cache RWX PVC (see hf-cache-pvc.yaml)
+#
+# Replace the upstream patch-vllm.yaml with this in your fork. The only additions vs upstream are
+# the HF_HOME env (lines under env:) and the hf-cache volumeMount + volume (marked ADDED).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,27 +22,14 @@ spec:
             - "Qwen/Qwen3-32B"
             - "--disable-access-log-for-endpoints=/health,/metrics,/v1/models"
             - "--tensor-parallel-size=2"
-            # Uncomment for distributed tracing
-            # - "--otlp-traces-endpoint=http://otel-collector:4317"
-            # - "--collect-detailed-traces=all"
-          # env:
-          #   # Uncomment for distributed tracing env vars
-          #   - name: OTEL_SERVICE_NAME
-          #     value: "vllm-decode"
-          #   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          #     value: "http://otel-collector:4317"
-          #   - name: OTEL_TRACES_EXPORTER
-          #     value: "otlp"
-          #   - name: OTEL_TRACES_SAMPLER
-          #     value: "parentbased_traceidratio"
-          #   - name: OTEL_TRACES_SAMPLER_ARG
-          #     value: "0.1"
           env:
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: llm-d-hf-token
                   key: HF_TOKEN
+            - name: HF_HOME              # ADDED: point HF cache at the persistent volume
+              value: /hf-cache
           resources:
             limits:
               cpu: "16"
@@ -52,6 +48,8 @@ spec:
               name: triton-cache
             - mountPath: /.config
               name: vllm-config
+            - mountPath: /hf-cache       # ADDED: persistent HF model cache
+              name: hf-cache
           startupProbe:
             initialDelaySeconds: 15
             periodSeconds: 30
@@ -76,3 +74,6 @@ spec:
           emptyDir: {}
         - name: vllm-config
           emptyDir: {}
+        - name: hf-cache                 # ADDED: bind the persistent RWX PVC
+          persistentVolumeClaim:
+            claimName: hf-cache
