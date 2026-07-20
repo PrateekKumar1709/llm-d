@@ -85,7 +85,7 @@ jobs:
       helm_release: ${{ inputs.helm_release || 'llmdbenchcicdr-rocm' }}
       workspace_dir: ${{ inputs.workspace_dir || '/tmp/llmdbenchcicdk-rocm' }}
       bucket_project: ${{ inputs.bucket_project || 'llm-d-scale' }}
-      bucket_provider: ${{ inputs.bucket_provider || 'gcs' }}
+      bucket_provider: ${{ inputs.bucket_provider || '' }}
       bucket_path: ${{ inputs.bucket_path || 'llm-d-benchmarks/regressions/optimized-baseline' }}
       gateway_class: ${{ inputs.gateway_class || 'epponly' }}
       monitoring_enabled: ${{ inputs.monitoring_enabled || 'false' }}
